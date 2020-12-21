@@ -1,0 +1,40 @@
+---
+
+- name: "Create esecurity group for bastion"
+  ec2_group:
+    vpc_id: "{{ ec2_vpc.vpc.id }}"
+    region: "{{ region }}"
+    state: present
+    name: "{{ bastion_sg }}"
+    description: "{{ bastion_sg }}"
+    tags:
+      Name: "{{ bastion_sg  }}"
+    rules:
+      - proto: tcp
+        ports:
+          - 22
+        cidr_ip: "{{ cidr_block }}"
+        rule_desc: allow all on port 22
+  register: security_group_results
+
+- name: "Create security group for webserver"
+  ec2_group:
+    vpc_id: "{{ ec2_vpc.vpc.id }}"
+    region: "{{ region }}"
+    state: present
+    name: "{{ webserver_sg }}"
+    description: "{{ webserver_sg }}"
+    tags:
+      Name: "{{ webserver_sg  }}"
+    rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        group_id: "{{ security_group_results.group_id }}"
+        rule_desc: allow 22 from bastion
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: "{{ cidr_block }}"
+        rule_desc: allow 80 from all
+  register: webserver_sg_group_results
